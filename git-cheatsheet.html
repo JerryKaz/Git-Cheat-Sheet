@@ -1,0 +1,955 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#4B5320">
+<title>Git &amp; CI/CD Cheat Sheet</title>
+<style>
+  :root {
+    --bg: #F2F2F7; --card: #FFFFFF; --fg: #000000;
+    --sec: rgba(60,60,67,.62); --sep: rgba(60,60,67,.16); --fill: rgba(118,118,128,.12);
+    --code: #F4F5EE; --accent: #4B5320; --accent-fill: #4B5320; --tint: rgba(75,83,32,.11);
+    --red: #FF3B30; --header: rgba(242,242,247,.78); --track: #E9E9EB;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.04);
+  }
+  :root[data-theme="dark"] {
+    --bg: #000000; --card: #1C1C1E; --fg: #FFFFFF;
+    --sec: rgba(235,235,245,.6); --sep: rgba(84,84,88,.55); --fill: rgba(118,118,128,.24);
+    --code: #2A2B26; --accent: #A7B86D; --accent-fill: #5A6428; --tint: rgba(167,184,109,.15);
+    --red: #FF453A; --header: rgba(0,0,0,.72); --track: #39393D;
+    --shadow: none;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 15px/1.47 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased; letter-spacing: -0.01em;
+  }
+  code, pre, .mono { font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 max(16px, env(safe-area-inset-left)); }
+  a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+
+  /* ---------- Header (frosted glass) ---------- */
+  header {
+    position: sticky; top: 0; z-index: 30; background: var(--header);
+    -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: .5px solid var(--sep);
+  }
+  .bar { display: flex; align-items: center; gap: 12px; padding: 10px 0 8px; }
+  .brand { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 17px; white-space: nowrap; }
+  .app-icon { width: 30px; height: 30px; border-radius: 7px; background: linear-gradient(160deg, #6B7533, #4B5320 55%, #353B16); color: #fff; display: grid; place-items: center; }
+  .search { flex: 1; display: flex; align-items: center; gap: 6px; background: var(--fill); border-radius: 10px; padding: 0 10px; height: 36px; color: var(--sec); max-width: 520px; margin-left: auto; }
+  .search input { flex: 1; border: 0; outline: 0; background: transparent; color: var(--fg); font: inherit; font-size: 16px; min-width: 0; }
+  .search input::placeholder { color: var(--sec); }
+  .theme { display: flex; align-items: center; gap: 7px; color: var(--sec); }
+
+  .switch { position: relative; width: 51px; height: 31px; flex-shrink: 0; cursor: pointer; }
+  .switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+  .switch .track { position: absolute; inset: 0; background: var(--track); border-radius: 16px; transition: background .25s; }
+  .switch .knob { position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 3px 8px rgba(0,0,0,.15), 0 1px 1px rgba(0,0,0,.16); transition: transform .25s cubic-bezier(.3,.7,.4,1); }
+  .switch input:checked + .track { background: var(--accent-fill); }
+  .switch input:checked + .track .knob { transform: translateX(20px); }
+  .switch input:focus-visible + .track { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  nav { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 10px; scrollbar-width: none; }
+  nav::-webkit-scrollbar { display: none; }
+  nav a {
+    display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+    background: var(--fill); color: var(--fg); border-radius: 999px; padding: 6px 12px;
+    font-size: 13px; font-weight: 500; text-decoration: none; transition: background .2s, color .2s;
+  }
+  nav a:hover { background: var(--tint); color: var(--accent); }
+  nav a.active { background: var(--accent-fill); color: #fff; }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    margin: 20px 0 30px; border-radius: 22px; padding: 30px 28px; color: #fff; position: relative; overflow: hidden;
+    background: radial-gradient(120% 140% at 100% 0%, #6E7A36 0%, #4B5320 45%, #2F3413 100%);
+  }
+  .hero::after { content: ""; position: absolute; right: -40px; bottom: -60px; width: 260px; height: 260px; border-radius: 50%; border: 40px solid rgba(255,255,255,.06); }
+  .hero h1 { margin: 0; font-size: 34px; line-height: 1.1; font-weight: 800; letter-spacing: -0.025em; }
+  .hero p { margin: 8px 0 18px; opacity: .85; font-size: 16px; max-width: 560px; }
+  .stats { display: flex; flex-wrap: wrap; gap: 8px; position: relative; z-index: 1; }
+  .stat { background: rgba(255,255,255,.14); border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; }
+  .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; position: relative; z-index: 1; }
+  .pill-btn { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 10px 18px; font-weight: 600; font-size: 15px; text-decoration: none; }
+  .pill-btn.white { background: #fff; color: #4B5320; }
+  .pill-btn.ghost { background: rgba(255,255,255,.16); color: #fff; }
+
+  /* ---------- Sections ---------- */
+  section { margin-bottom: 36px; scroll-margin-top: 120px; }
+  .sec-head { display: flex; align-items: center; gap: 12px; margin: 0 4px 10px; }
+  .sec-icon { width: 34px; height: 34px; border-radius: 8px; background: var(--accent-fill); color: #fff; display: grid; place-items: center; flex-shrink: 0; }
+  .sec-num { font-size: 12px; font-weight: 600; color: var(--sec); text-transform: uppercase; letter-spacing: .04em; }
+  h2 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
+  .note { margin: -2px 4px 12px; color: var(--sec); font-size: 14px; }
+
+  .card { background: var(--card); border-radius: 16px; box-shadow: var(--shadow); }
+  .list { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); column-gap: 32px; padding: 0 16px; overflow: hidden; }
+  .row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: .5px solid var(--sep); margin-bottom: -.5px; }
+  .row-main { flex: 1; min-width: 0; }
+  .row code { display: block; font-size: 13.5px; color: var(--fg); white-space: pre-wrap; word-break: break-word; cursor: pointer; font-weight: 500; }
+  .row .desc { font-size: 13px; color: var(--sec); margin-top: 2px; }
+  .ph { color: var(--accent); font-style: italic; }
+  .badge-red { color: var(--red); font-weight: 600; margin-right: 4px; }
+
+  .copy {
+    flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+    border: 0; background: var(--tint); color: var(--accent); border-radius: 999px;
+    padding: 6px 12px; font: 600 13px/1 inherit; font-family: inherit; cursor: pointer; min-width: 74px;
+    transition: transform .12s, background .2s, color .2s;
+  }
+  .copy:active { transform: scale(.94); }
+  .copy.done { background: var(--accent-fill); color: #fff; }
+
+  /* ---------- Quick-start guide ---------- */
+  .seg { display: flex; background: var(--fill); border-radius: 9px; padding: 2px; margin-bottom: 12px; overflow-x: auto; scrollbar-width: none; }
+  .seg button {
+    flex: 1; border: 0; background: transparent; color: var(--fg); font: 600 13px inherit; font-family: inherit;
+    padding: 7px 12px; border-radius: 7px; cursor: pointer; white-space: nowrap; transition: background .2s, box-shadow .2s;
+  }
+  .seg button.on { background: var(--card); box-shadow: 0 3px 8px rgba(0,0,0,.12), 0 0 1px rgba(0,0,0,.08); }
+  :root[data-theme="dark"] .seg button.on { background: #636366; }
+  .guide { padding: 18px 18px 8px; }
+  .guide-top { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
+  .guide-top p { flex: 1; margin: 0; color: var(--sec); font-size: 14px; }
+  .steps { list-style: none; margin: 0; padding: 0; }
+  .step { display: flex; gap: 14px; position: relative; padding-bottom: 18px; }
+  .step:not(:last-child)::before { content: ""; position: absolute; left: 13px; top: 30px; bottom: 2px; width: 2px; background: var(--tint); border-radius: 2px; }
+  .num { width: 28px; height: 28px; border-radius: 50%; background: var(--accent-fill); color: #fff; font-weight: 700; font-size: 13px; display: grid; place-items: center; flex-shrink: 0; }
+  .step-body { flex: 1; min-width: 0; padding-top: 3px; }
+  .step-body h4 { margin: 0; font-size: 15.5px; font-weight: 600; }
+  .step-body p { margin: 2px 0 0; color: var(--sec); font-size: 13.5px; }
+  .cmd { display: flex; align-items: center; gap: 10px; background: var(--code); border-radius: 12px; padding: 10px 10px 10px 14px; margin-top: 8px; }
+  .cmd code { flex: 1; font-size: 13.5px; white-space: pre-wrap; word-break: break-word; cursor: pointer; }
+  .link-btn { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; font-weight: 600; font-size: 14px; text-decoration: none; }
+  .callout { display: flex; gap: 10px; background: var(--tint); color: var(--fg); border-radius: 14px; padding: 12px 14px; margin: 12px 0 0; font-size: 13.5px; }
+  .callout svg { color: var(--accent); flex-shrink: 0; margin-top: 1px; }
+  .guide-label { font-size: 12px; font-weight: 600; color: var(--sec); text-transform: uppercase; letter-spacing: .04em; margin: 4px 0 10px; }
+
+  /* ---------- YAML blocks ---------- */
+  .block { margin-top: 12px; overflow: hidden; }
+  .block-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px 4px 16px; }
+  .file { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file svg { color: var(--accent); flex-shrink: 0; }
+  .block-desc { padding: 0 16px 12px; color: var(--sec); font-size: 13.5px; }
+  .block pre { margin: 0 10px 10px; padding: 14px; overflow-x: auto; background: var(--code); border-radius: 12px; font-size: 13px; line-height: 1.55; }
+
+  /* ---------- Diagrams ---------- */
+  .diagram { margin: 0 0 12px; padding: 16px; }
+  .diagram figcaption { font-size: 13px; color: var(--sec); margin: 10px 2px 0; }
+  .diagram figcaption code { font-size: 12px; background: var(--code); padding: 1px 5px; border-radius: 5px; }
+  .dscroll { overflow-x: auto; }
+  .diagram svg { display: block; width: 100%; height: auto; min-width: 660px; }
+  .d-box { fill: var(--card); stroke: var(--accent); stroke-width: 2; }
+  .d-box.inv { fill: var(--accent-fill); stroke: var(--accent-fill); }
+  .d-t { fill: var(--fg); font-family: -apple-system, system-ui, sans-serif; font-size: 14px; font-weight: 700; }
+  .d-t.inv { fill: #fff; }
+  .d-s { fill: var(--sec); font-family: "SF Mono", ui-monospace, monospace; font-size: 11px; }
+  .d-s.inv { fill: rgba(255,255,255,.8); }
+  .d-c { fill: var(--accent); font-family: "SF Mono", ui-monospace, monospace; font-size: 12px; font-weight: 600; }
+  .d-ln { stroke: var(--accent); stroke-width: 2; fill: none; }
+  .d-dash { stroke-dasharray: 5 5; }
+  .d-fill { fill: var(--accent); }
+  .d-dot { fill: var(--card); stroke: var(--accent); stroke-width: 2.5; }
+
+  .tips { margin-top: 12px; padding: 16px 18px; }
+  .tips h3 { margin: 0 0 8px; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+  .tips h3 svg { color: var(--accent); }
+  .tips ul { margin: 0; padding-left: 20px; color: var(--sec); font-size: 14px; }
+  .tips li { margin: 4px 0; }
+  .tips code { background: var(--code); padding: 1px 5px; border-radius: 5px; font-size: 12.5px; color: var(--fg); }
+
+  .empty { text-align: center; color: var(--sec); padding: 60px 0; display: none; }
+  footer { color: var(--sec); font-size: 13px; padding: 10px 0 40px; text-align: center; }
+
+  /* ---------- Toast ---------- */
+  .toast {
+    position: fixed; left: 50%; bottom: max(24px, env(safe-area-inset-bottom)); z-index: 50;
+    transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+    display: flex; align-items: center; gap: 8px; padding: 11px 18px; border-radius: 999px;
+    background: rgba(30,30,30,.86); color: #fff; font-weight: 600; font-size: 14px;
+    -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+    box-shadow: 0 8px 30px rgba(0,0,0,.25); transition: opacity .25s, transform .3s cubic-bezier(.3,.7,.4,1);
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .toast svg { color: #B7C77E; }
+
+  @media (max-width: 640px) {
+    .bar { flex-wrap: wrap; }
+    .brand { flex: 1; }
+    .search { order: 3; flex-basis: 100%; max-width: none; }
+    .theme .lbl { display: none; }
+    .hero { padding: 24px 20px; border-radius: 18px; }
+    .hero h1 { font-size: 28px; }
+    .list { grid-template-columns: 1fr; }
+    section { scroll-margin-top: 160px; }
+    .guide { padding: 16px 14px 4px; }
+  }
+  @media print {
+    header, .copy, .hero-actions, .seg, .toast { display: none !important; }
+    body { background: #fff; }
+    .card { box-shadow: none; border: 1px solid #ddd; }
+    section, .row, .block, .diagram, .step { break-inside: avoid; }
+    .diagram svg { min-width: 0; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="bar">
+      <div class="brand"><span class="app-icon" id="appIcon"></span>Git Cheat Sheet</div>
+      <label class="search"><span id="searchIcon"></span>
+        <input id="q" type="search" placeholder="Search" autocomplete="off" aria-label="Search commands">
+      </label>
+      <div class="theme">
+        <span class="lbl" id="themeIcon"></span>
+        <label class="switch" aria-label="Dark mode">
+          <input type="checkbox" id="themeSwitch">
+          <span class="track"><span class="knob"></span></span>
+        </label>
+      </div>
+    </div>
+    <nav id="nav" aria-label="Sections"></nav>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="hero">
+    <h1>Git, GitHub &amp; CI/CD</h1>
+    <p>Every command you need, in the order you'll use it. Tap any command to copy it.</p>
+    <div class="stats" id="stats"></div>
+    <div class="hero-actions">
+      <a class="pill-btn white" href="#quickstart" id="heroStart"></a>
+      <a class="pill-btn ghost" href="#cicd" id="heroCicd"></a>
+    </div>
+  </div>
+</div>
+
+<main class="wrap" id="main"></main>
+<div class="empty wrap" id="empty">No results. Try a different search.</div>
+<footer class="wrap">Text in <span class="ph">&lt;angle brackets&gt;</span> is a placeholder for you to replace. Commands marked <span class="badge-red">Destructive</span> can delete work, so run <code>git status</code> first.</footer>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- ============ DIAGRAMS ============ -->
+<template id="tpl-areas">
+<figure class="diagram card">
+  <div class="dscroll">
+  <svg viewBox="0 0 910 225" role="img" aria-label="The four areas of Git and the commands that move changes between them">
+    <defs><marker id="ah1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="d-fill"/></marker></defs>
+    <rect class="d-box" x="20"  y="45" width="150" height="65" rx="12"/>
+    <rect class="d-box" x="260" y="45" width="150" height="65" rx="12"/>
+    <rect class="d-box" x="500" y="45" width="150" height="65" rx="12"/>
+    <rect class="d-box inv" x="740" y="45" width="150" height="65" rx="12"/>
+    <text class="d-t" x="95"  y="73" text-anchor="middle">Working dir</text>
+    <text class="d-s" x="95"  y="93" text-anchor="middle">your files</text>
+    <text class="d-t" x="335" y="73" text-anchor="middle">Staging area</text>
+    <text class="d-s" x="335" y="93" text-anchor="middle">the index</text>
+    <text class="d-t" x="575" y="73" text-anchor="middle">Local repo</text>
+    <text class="d-s" x="575" y="93" text-anchor="middle">.git history</text>
+    <text class="d-t inv" x="815" y="73" text-anchor="middle">GitHub</text>
+    <text class="d-s inv" x="815" y="93" text-anchor="middle">remote · origin</text>
+    <line class="d-ln" x1="170" y1="78" x2="258" y2="78" marker-end="url(#ah1)"/>
+    <line class="d-ln" x1="410" y1="78" x2="498" y2="78" marker-end="url(#ah1)"/>
+    <line class="d-ln" x1="650" y1="78" x2="738" y2="78" marker-end="url(#ah1)"/>
+    <text class="d-c" x="215" y="66" text-anchor="middle">git add</text>
+    <text class="d-c" x="455" y="66" text-anchor="middle">git commit</text>
+    <text class="d-c" x="695" y="66" text-anchor="middle">git push</text>
+    <path class="d-ln" d="M555 110 V150 H115 V113" marker-end="url(#ah1)"/>
+    <text class="d-c" x="335" y="143" text-anchor="middle">git switch · git restore</text>
+    <path class="d-ln" d="M835 110 V150 H595 V113" marker-end="url(#ah1)"/>
+    <text class="d-c" x="715" y="143" text-anchor="middle">git fetch</text>
+    <path class="d-ln d-dash" d="M870 110 V200 H40 V113" marker-end="url(#ah1)"/>
+    <text class="d-c" x="455" y="193" text-anchor="middle">git pull  =  fetch + merge</text>
+  </svg>
+  </div>
+  <figcaption>Every Git command moves changes between these four areas. The top row sends your work out to GitHub, and the bottom row brings changes back.</figcaption>
+</figure>
+</template>
+
+<template id="tpl-publish">
+<figure class="diagram card">
+  <div class="dscroll">
+  <svg viewBox="0 0 900 130" role="img" aria-label="Steps to publish a local folder to GitHub">
+    <defs><marker id="ah4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="d-fill"/></marker></defs>
+    <rect class="d-box" x="10"  y="30" width="130" height="62" rx="12"/>
+    <rect class="d-box" x="190" y="30" width="130" height="62" rx="12"/>
+    <rect class="d-box" x="370" y="30" width="130" height="62" rx="12"/>
+    <rect class="d-box" x="550" y="30" width="130" height="62" rx="12"/>
+    <rect class="d-box inv" x="730" y="30" width="160" height="62" rx="12"/>
+    <text class="d-t" x="75"  y="57" text-anchor="middle">Project folder</text>
+    <text class="d-s" x="75"  y="76" text-anchor="middle">cd my-app</text>
+    <text class="d-t" x="255" y="57" text-anchor="middle">git init</text>
+    <text class="d-s" x="255" y="76" text-anchor="middle">make it a repo</text>
+    <text class="d-t" x="435" y="57" text-anchor="middle">First commit</text>
+    <text class="d-s" x="435" y="76" text-anchor="middle">add + commit</text>
+    <text class="d-t" x="615" y="57" text-anchor="middle">Connect</text>
+    <text class="d-s" x="615" y="76" text-anchor="middle">remote add origin</text>
+    <text class="d-t inv" x="810" y="57" text-anchor="middle">Live on GitHub</text>
+    <text class="d-s inv" x="810" y="76" text-anchor="middle">push -u origin main</text>
+    <line class="d-ln" x1="140" y1="61" x2="188" y2="61" marker-end="url(#ah4)"/>
+    <line class="d-ln" x1="320" y1="61" x2="368" y2="61" marker-end="url(#ah4)"/>
+    <line class="d-ln" x1="500" y1="61" x2="548" y2="61" marker-end="url(#ah4)"/>
+    <line class="d-ln" x1="680" y1="61" x2="728" y2="61" marker-end="url(#ah4)"/>
+  </svg>
+  </div>
+</figure>
+</template>
+
+<template id="tpl-branch">
+<figure class="diagram card">
+  <div class="dscroll">
+  <svg viewBox="0 0 900 195" role="img" aria-label="A feature branch created from main and merged back">
+    <line class="d-ln" x1="40" y1="70" x2="870" y2="70" style="stroke-width:3"/>
+    <path class="d-ln" d="M190 70 C 240 70, 240 140, 290 140 L 620 140 C 690 140, 700 70, 760 70" style="stroke-width:3;stroke-opacity:.7"/>
+    <circle class="d-dot" cx="90"  cy="70" r="9"/>
+    <circle class="d-dot" cx="190" cy="70" r="9"/>
+    <circle class="d-dot" cx="470" cy="70" r="9"/>
+    <circle class="d-fill" cx="760" cy="70" r="11"/>
+    <circle class="d-dot" cx="850" cy="70" r="9"/>
+    <circle class="d-dot" cx="330" cy="140" r="9"/>
+    <circle class="d-dot" cx="440" cy="140" r="9"/>
+    <circle class="d-dot" cx="550" cy="140" r="9"/>
+    <text class="d-t" x="40" y="52">main</text>
+    <text class="d-t" x="300" y="178">feature/login</text>
+    <text class="d-c" x="190" y="38" text-anchor="middle">git switch -c feature/login</text>
+    <text class="d-c" x="440" y="112" text-anchor="middle">git commit (×3)</text>
+    <text class="d-c" x="760" y="38" text-anchor="middle">git merge feature/login</text>
+    <text class="d-s" x="470" y="96" text-anchor="middle">teammate's commit</text>
+    <text class="d-s" x="850" y="96" text-anchor="middle">git push</text>
+  </svg>
+  </div>
+  <figcaption>Do your work on a short-lived branch, keep <code>main</code> deployable, and merge back through a pull request. The filled dot is the merge commit.</figcaption>
+</figure>
+</template>
+
+<template id="tpl-cicd">
+<figure class="diagram card">
+  <div class="dscroll">
+  <svg viewBox="0 0 900 240" role="img" aria-label="CI/CD pipeline from push to deploy">
+    <defs><marker id="ah3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="d-fill"/></marker></defs>
+    <rect class="d-box" x="10"  y="40" width="125" height="70" rx="12"/>
+    <rect class="d-box" x="160" y="40" width="125" height="70" rx="12"/>
+    <rect class="d-box" x="310" y="40" width="125" height="70" rx="12"/>
+    <rect class="d-box" x="460" y="40" width="125" height="70" rx="12"/>
+    <rect class="d-box" x="610" y="40" width="125" height="70" rx="12"/>
+    <rect class="d-box inv" x="760" y="40" width="125" height="70" rx="12"/>
+    <text class="d-t" x="72"  y="70" text-anchor="middle">Push / PR</text>
+    <text class="d-s" x="72"  y="90" text-anchor="middle">trigger</text>
+    <text class="d-t" x="222" y="70" text-anchor="middle">Checkout</text>
+    <text class="d-s" x="222" y="90" text-anchor="middle">actions/checkout</text>
+    <text class="d-t" x="372" y="70" text-anchor="middle">Install</text>
+    <text class="d-s" x="372" y="90" text-anchor="middle">npm ci + cache</text>
+    <text class="d-t" x="522" y="70" text-anchor="middle">Lint &amp; Test</text>
+    <text class="d-s" x="522" y="90" text-anchor="middle">npm test</text>
+    <text class="d-t" x="672" y="70" text-anchor="middle">Build</text>
+    <text class="d-s" x="672" y="90" text-anchor="middle">npm run build</text>
+    <text class="d-t inv" x="822" y="70" text-anchor="middle">Deploy</text>
+    <text class="d-s inv" x="822" y="90" text-anchor="middle">staging → prod</text>
+    <line class="d-ln" x1="135" y1="75" x2="158" y2="75" marker-end="url(#ah3)"/>
+    <line class="d-ln" x1="285" y1="75" x2="308" y2="75" marker-end="url(#ah3)"/>
+    <line class="d-ln" x1="435" y1="75" x2="458" y2="75" marker-end="url(#ah3)"/>
+    <line class="d-ln" x1="585" y1="75" x2="608" y2="75" marker-end="url(#ah3)"/>
+    <line class="d-ln" x1="735" y1="75" x2="758" y2="75" marker-end="url(#ah3)"/>
+    <path class="d-ln" d="M10 135 V145 H735 V135"/>
+    <text class="d-c" x="372" y="166" text-anchor="middle">CI: runs on every push &amp; pull request</text>
+    <path class="d-ln" d="M760 135 V145 H885 V135"/>
+    <text class="d-c" x="822" y="166" text-anchor="middle">CD: main / tags</text>
+    <path class="d-ln d-dash" d="M522 110 V205" marker-end="url(#ah3)"/>
+    <text class="d-c" x="534" y="222">✗ any step fails → PR blocked, nothing deploys</text>
+  </svg>
+  </div>
+  <figcaption>CI proves every change is safe, and CD ships it automatically. Each box maps to a step in the workflow files below.</figcaption>
+</figure>
+</template>
+
+<!-- ============ YAML WORKFLOWS ============ -->
+<script type="text/plain" id="yaml-ci">
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel older runs on the same branch when new commits arrive
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+</script>
+
+<script type="text/plain" id="yaml-matrix">
+name: Test matrix
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm test
+</script>
+
+<script type="text/plain" id="yaml-pages">
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist   # change to your build output folder
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+</script>
+
+<script type="text/plain" id="yaml-release">
+name: Release
+
+on:
+  push:
+    tags: ['v*']   # git tag -a v1.0.0 -m "..." && git push origin v1.0.0
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production   # add required reviewers in repo settings
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+      - name: Deploy
+        run: ./scripts/deploy.sh
+        env:
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+
+      - name: Create GitHub release
+        run: gh release create "$GITHUB_REF_NAME" --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+</script>
+
+<script>
+/* ---------- Icons (SF Symbols-style, stroke = currentColor) ---------- */
+const ICONS = {
+  git:     '<circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="9" r="2.5"/><path d="M6 8.5v7M18 11.5c0 4-5 3.5-10 5.5"/>',
+  map:     '<path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/>',
+  rocket:  '<path d="M5 15c-1.5 1.3-2 5-2 5s3.7-.5 5-2c.8-.8.8-2.2 0-3s-2.2-.8-3 0z"/><path d="M9 15l-3-3a13 13 0 0 1 12-9 13 13 0 0 1-9 12z"/><circle cx="15" cy="9" r="1.5"/>',
+  start:   '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 10.5v5M9.5 13h5"/>',
+  config:  '<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>',
+  stage:   '<rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 8v8M8 12h8"/>',
+  commit:  '<circle cx="12" cy="12" r="4"/><path d="M2 12h6M16 12h6"/>',
+  branch:  '<path d="M6 3v12"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/>',
+  remote:  '<path d="M7 18a5 5 0 1 1 .9-9.9A6 6 0 0 1 19 10.5 3.75 3.75 0 0 1 18 18z"/><path d="M12 16v-5M10 13l2-2 2 2"/>',
+  merge:   '<circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/>',
+  inspect: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/>',
+  stash:   '<rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 13h4"/>',
+  undo:    '<path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>',
+  tag:     '<path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
+  zap:     '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+  term:    '<rect x="2" y="4" width="20" height="16" rx="3"/><path d="M6 9l4 3-4 3M12 15h6"/>',
+  flow:    '<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/><path d="M10 6.5h4.5a3 3 0 0 1 3 3V14"/>',
+  file:    '<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5"/>',
+  bulb:    '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.5 1 2.5h6c0-1 .2-1.7 1-2.5A6 6 0 0 0 12 3z"/>',
+  info:    '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+  ext:     '<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+  copy:    '<rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/>',
+  copyAll: '<rect x="8" y="8" width="13" height="13" rx="2.5"/><path d="M4 16V5a1 1 0 0 1 1-1h11M12 13h5M12 16.5h5"/>',
+  check:   '<path d="M5 12l5 5L20 7"/>',
+  search:  '<circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/>',
+  moon:    '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+};
+const svg = (name, size = 18, w = 2) =>
+  `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
+
+/* ---------- Quick-start guides: put a project on Git & GitHub ---------- */
+const GUIDES = [
+  { id: "new", label: "New project",
+    intro: "Use this when you have a project folder on your computer and want it on GitHub.",
+    steps: [
+      { t: "Create an empty repo on GitHub", d: "Name it, choose Public or Private, and leave README, .gitignore and license unticked so the first push doesn't conflict.", link: ["https://github.com/new", "Open github.com/new"] },
+      { t: "Open your project in the terminal", c: "cd <path/to/your-project>" },
+      { t: "Turn it into a Git repo", c: "git init" },
+      { t: "Add a .gitignore", d: "This keeps dependencies, build output and secrets out of Git. Do it before your first commit.", c: 'printf "node_modules/\\n.env\\ndist/\\n.DS_Store\\n" > .gitignore' },
+      { t: "Stage and make your first commit", c: 'git add .\ngit commit -m "Initial commit"' },
+      { t: "Name your branch main", c: "git branch -M main" },
+      { t: "Connect your local repo to GitHub", d: "Copy the URL from your new repo's page on GitHub.", c: "git remote add origin https://github.com/<username>/<repo>.git" },
+      { t: "Push", d: "-u links your branch to GitHub, so after this you only need to type git push.", c: "git push -u origin main" },
+    ]},
+  { id: "gh", label: "GitHub CLI",
+    intro: "This is the fastest route. The gh CLI creates the GitHub repo and pushes in one command, so you never open the browser.",
+    steps: [
+      { t: "Install gh and sign in", d: "Install from cli.github.com, then run the command below once per machine.", c: "gh auth login" },
+      { t: "Open your project", c: "cd <path/to/your-project>" },
+      { t: "Initialise and commit", c: 'git init\ngit add .\ngit commit -m "Initial commit"' },
+      { t: "Create the repo and push", d: "Use --public instead of --private if you want the repo to be open.", c: "gh repo create <repo-name> --private --source=. --remote=origin --push" },
+    ]},
+  { id: "ssh", label: "SSH key",
+    intro: "This is a one-time setup so you can push without typing a password or token.",
+    steps: [
+      { t: "Generate a key", d: "Press Enter to accept the default location. Adding a passphrase is recommended.", c: 'ssh-keygen -t ed25519 -C "<you@example.com>"' },
+      { t: "Add it to the SSH agent", c: 'eval "$(ssh-agent -s)"\nssh-add ~/.ssh/id_ed25519' },
+      { t: "Copy your public key", d: "On macOS use pbcopy < ~/.ssh/id_ed25519.pub. On Windows Git Bash use clip < ~/.ssh/id_ed25519.pub.", c: "cat ~/.ssh/id_ed25519.pub" },
+      { t: "Add the key to GitHub", d: "Go to Settings → SSH and GPG keys → New SSH key, then paste it.", link: ["https://github.com/settings/keys", "Open SSH key settings"] },
+      { t: "Test the connection", d: "You should see \"Hi <username>! You've successfully authenticated\".", c: "ssh -T git@github.com" },
+      { t: "Switch an existing repo to SSH", c: "git remote set-url origin git@github.com:<username>/<repo>.git" },
+    ]},
+  { id: "daily", label: "Daily flow",
+    intro: "This is the loop you'll repeat every day once the project is on GitHub.",
+    steps: [
+      { t: "Get the latest main", c: "git switch main\ngit pull" },
+      { t: "Create a branch for your work", c: "git switch -c feature/<name>" },
+      { t: "Commit as you go", c: 'git add .\ngit commit -m "<what you changed>"' },
+      { t: "Push your branch", c: "git push -u origin feature/<name>" },
+      { t: "Open a pull request", d: "Or click \"Compare & pull request\" on GitHub. CI runs automatically.", c: "gh pr create --fill" },
+      { t: "After it's merged, clean up", c: "git switch main\ngit pull\ngit branch -d feature/<name>" },
+    ]},
+];
+
+/* ---------- Reference sections, in the order you use them ---------- */
+const SECTIONS = [
+  { id: "overview", short: "How Git works", icon: "map", title: "How Git works",
+    note: "Learn this model first. Every command below fits somewhere in it.", diagram: "tpl-areas" },
+
+  { id: "quickstart", short: "Git → GitHub", icon: "rocket", title: "Put your project on GitHub",
+    note: "Follow the steps in order. Each command has its own copy button, or use Copy all.", diagram: "tpl-publish", guide: true },
+
+  { id: "start", short: "Start", icon: "start", title: "Start a repository", items: [
+    ["git init", "Turn the current folder into a Git repo"],
+    ["git init <folder>", "Create a new folder with an empty repo"],
+    ["git clone <url>", "Copy a GitHub repo to your machine"],
+    ["git clone <url> <folder>", "Clone into a folder with a custom name"],
+    ["git clone -b <branch> <url>", "Clone and check out a specific branch"],
+    ["git clone --depth 1 <url>", "Shallow clone with only the latest commit (fast)"],
+  ]},
+
+  { id: "config", short: "Configure", icon: "config", title: "Configure Git",
+    note: "Run these once per machine. --global applies to every repo.", items: [
+    ['git config --global user.name "<Your Name>"', "Name shown on your commits"],
+    ['git config --global user.email "<you@example.com>"', "Email shown on your commits (match GitHub)"],
+    ["git config --global init.defaultBranch main", "New repos start on main"],
+    ['git config --global core.editor "code --wait"', "Use VS Code for commit messages"],
+    ["git config --global pull.rebase true", "Rebase instead of merge when pulling"],
+    ["git config --global push.autoSetupRemote true", "First push sets upstream automatically"],
+    ["git config --global core.autocrlf input", "Normalise line endings (use true on Windows)"],
+    ['git config --global alias.lg "log --oneline --graph --decorate --all"', "Create a git lg shortcut"],
+    ["git config --list --show-origin", "Show every setting and where it's defined"],
+  ]},
+
+  { id: "stage", short: "Stage", icon: "stage", title: "Check & stage changes", items: [
+    ["git status", "See changed, staged and untracked files"],
+    ["git status -sb", "Short status with branch and ahead/behind"],
+    ["git add <file>", "Stage one file"],
+    ["git add .", "Stage everything in the current folder"],
+    ["git add -p", "Review and stage changes hunk by hunk"],
+    ["git restore --staged <file>", "Unstage a file but keep the edits"],
+    ["git rm --cached <file>", "Stop tracking a file but keep it on disk"],
+    ["git mv <old> <new>", "Rename or move a tracked file"],
+  ]},
+
+  { id: "commit", short: "Commit", icon: "commit", title: "Commit",
+    note: "Write messages in the imperative mood, e.g. \"Add login form\".", items: [
+    ['git commit -m "<message>"', "Commit what's staged"],
+    ["git commit", "Open your editor for a longer message"],
+    ['git commit -am "<message>"', "Stage tracked files and commit in one step"],
+    ["git commit --amend", "Fix the last commit's message or content"],
+    ["git commit --amend --no-edit", "Add staged changes to the last commit"],
+    ['git commit --allow-empty -m "<message>"', "Empty commit, e.g. to re-trigger CI"],
+  ]},
+
+  { id: "branch", short: "Branch", icon: "branch", title: "Branch", diagram: "tpl-branch", items: [
+    ["git branch", "List local branches"],
+    ["git branch -a", "List local and remote branches"],
+    ["git switch -c <branch>", "Create a branch and switch to it"],
+    ["git switch <branch>", "Switch to an existing branch"],
+    ["git switch -", "Jump back to the previous branch"],
+    ["git branch -m <new-name>", "Rename the current branch"],
+    ["git branch --merged", "Branches already merged into this one"],
+    ["git branch -d <branch>", "Delete a merged branch"],
+    ["git branch -D <branch>", "Force-delete a branch, including unmerged work", true],
+  ]},
+
+  { id: "remote", short: "Push & pull", icon: "remote", title: "Sync with GitHub",
+    note: "Never force-push to a shared branch unless your team has agreed to it.", items: [
+    ["git remote -v", "List remotes and their URLs"],
+    ["git remote add origin <url>", "Connect your repo to GitHub"],
+    ["git remote set-url origin <url>", "Change the remote URL (e.g. HTTPS → SSH)"],
+    ["git push -u origin <branch>", "First push of a branch, with upstream tracking"],
+    ["git push", "Push the current branch"],
+    ["git fetch", "Download remote changes without touching your files"],
+    ["git fetch --prune", "Fetch and drop references to deleted remote branches"],
+    ["git pull", "Fetch and integrate remote changes"],
+    ["git pull --rebase", "Pull and replay your commits on top"],
+    ["git push --force-with-lease", "Safer force push that refuses if the remote moved", true],
+    ["git push origin --delete <branch>", "Delete a branch on GitHub"],
+  ]},
+
+  { id: "merge", short: "Merge & rebase", icon: "merge", title: "Merge & rebase",
+    note: "Merge keeps the history as it happened. Rebase makes it linear. Only rebase commits you haven't shared yet.", items: [
+    ["git merge <branch>", "Merge a branch into the current one"],
+    ["git merge --no-ff <branch>", "Always create a merge commit"],
+    ["git merge --squash <branch>", "Squash a branch into one staged change"],
+    ["git merge --abort", "Cancel a merge that has conflicts"],
+    ["git rebase <branch>", "Replay your commits on top of another branch"],
+    ["git rebase -i HEAD~<n>", "Squash, reword or reorder the last n commits"],
+    ["git rebase --continue", "Continue after fixing conflicts"],
+    ["git rebase --abort", "Cancel the rebase and restore everything"],
+    ["git cherry-pick <commit>", "Copy one commit onto the current branch"],
+  ]},
+
+  { id: "inspect", short: "Inspect", icon: "inspect", title: "Inspect history", items: [
+    ["git log --oneline --graph --decorate --all", "Visual history of all branches"],
+    ["git log -p <file>", "Full history of a file, with diffs"],
+    ['git log --author="<name>"', "Commits by one author"],
+    ['git log -S "<text>"', "Find commits that added or removed some text"],
+    ["git show <commit>", "Details and diff of one commit"],
+    ["git diff", "Unstaged changes"],
+    ["git diff --staged", "What you're about to commit"],
+    ["git diff <branch1>..<branch2>", "Compare two branches"],
+    ["git blame <file>", "Who last changed each line"],
+    ["git shortlog -sn", "Commit count per author"],
+  ]},
+
+  { id: "stash", short: "Stash", icon: "stash", title: "Stash work in progress", items: [
+    ["git stash", "Shelve uncommitted changes"],
+    ['git stash push -u -m "<message>"', "Stash including untracked files, with a label"],
+    ["git stash list", "List stashes"],
+    ["git stash pop", "Re-apply the latest stash and remove it"],
+    ["git stash apply stash@{<n>}", "Re-apply a stash and keep it"],
+    ["git stash drop stash@{<n>}", "Delete one stash"],
+  ]},
+
+  { id: "undo", short: "Undo", icon: "undo", title: "Undo & recover",
+    note: "On shared branches, use git revert instead of git reset.", items: [
+    ["git restore <file>", "Throw away unstaged edits to a file", true],
+    ["git reset --soft HEAD~1", "Undo the last commit and keep its changes staged"],
+    ["git reset HEAD~1", "Undo the last commit and keep its changes unstaged"],
+    ["git reset --hard HEAD~1", "Undo the last commit and delete its changes", true],
+    ["git reset --hard origin/<branch>", "Make the local branch match GitHub exactly", true],
+    ["git revert <commit>", "New commit that reverses an old one (safe when shared)"],
+    ["git reflog", "Everywhere HEAD has been, for finding lost commits"],
+    ["git switch -c <branch> <commit>", "Rescue a lost commit onto a new branch"],
+    ["git clean -n", "Preview which untracked files would be deleted"],
+    ["git clean -fd", "Delete untracked files and folders", true],
+  ]},
+
+  { id: "tags", short: "Tags", icon: "tag", title: "Tags & releases",
+    note: "Pushing a v* tag can trigger the Release workflow in the CI/CD section.", items: [
+    ["git tag", "List tags"],
+    ['git tag -a v<1.0.0> -m "<message>"', "Create an annotated release tag"],
+    ["git push origin v<1.0.0>", "Push one tag"],
+    ["git push --tags", "Push all tags"],
+    ["git tag -d v<1.0.0>", "Delete a local tag"],
+    ["git push origin --delete v<1.0.0>", "Delete a tag on GitHub"],
+  ]},
+
+  { id: "advanced", short: "Advanced", icon: "zap", title: "Advanced tools", items: [
+    ["git bisect start", "Binary-search for the commit that broke something"],
+    ["git bisect bad && git bisect good <commit>", "Mark current as bad and a known-good commit"],
+    ["git bisect reset", "Finish bisecting"],
+    ["git worktree add ../<folder> <branch>", "Work on a second branch in another folder"],
+    ["git submodule update --init --recursive", "Fetch submodules after cloning"],
+    ["git rm -r --cached . && git add .", "Re-apply .gitignore to files already tracked"],
+    ["git archive --format=zip -o <out>.zip HEAD", "Export the project as a zip"],
+  ]},
+
+  { id: "gh", short: "GitHub CLI", icon: "term", title: "GitHub CLI (gh)",
+    note: "Manage repos, pull requests and Actions runs without leaving the terminal. Install it from cli.github.com.", items: [
+    ["gh auth login", "Sign in to GitHub"],
+    ["gh repo create <name> --private --source=. --push", "Create a repo from this folder and push"],
+    ["gh repo clone <owner>/<repo>", "Clone by owner/name"],
+    ["gh repo view --web", "Open this repo in the browser"],
+    ["gh pr create --fill", "Open a PR using your commit messages"],
+    ["gh pr list", "List open pull requests"],
+    ["gh pr checkout <number>", "Check out a PR locally to test it"],
+    ["gh pr merge <number> --squash --delete-branch", "Squash-merge a PR and clean up"],
+    ["gh workflow list", "List Actions workflows"],
+    ["gh workflow run <workflow>.yml", "Trigger a workflow manually (needs workflow_dispatch)"],
+    ["gh run list", "Recent workflow runs"],
+    ["gh run watch", "Follow a running workflow live"],
+    ["gh run view <run-id> --log-failed", "Only the logs of failed steps"],
+    ["gh run rerun <run-id> --failed", "Re-run only the failed jobs"],
+    ["gh secret set <NAME>", "Add a repo secret for Actions"],
+    ["gh release create v<1.0.0> --generate-notes", "Publish a release with auto-written notes"],
+  ]},
+
+  { id: "cicd", short: "CI/CD", icon: "flow", title: "CI/CD with GitHub Actions",
+    note: "Save each file under .github/workflows/ in your repo. GitHub runs it automatically on the events listed under on:.",
+    diagram: "tpl-cicd",
+    blocks: [
+      { file: ".github/workflows/ci.yml", src: "yaml-ci",
+        desc: "Core CI. Runs lint, tests and build on every push to main and on every PR, and cancels outdated runs." },
+      { file: ".github/workflows/matrix.yml", src: "yaml-matrix",
+        desc: "Tests across operating systems and Node versions in parallel." },
+      { file: ".github/workflows/pages.yml", src: "yaml-pages",
+        desc: "Deploys a static site to GitHub Pages on every push to main. To use it, set Settings → Pages → Source to \"GitHub Actions\"." },
+      { file: ".github/workflows/release.yml", src: "yaml-release",
+        desc: "Production deploy plus a GitHub release, triggered by pushing a v* tag. Uses a protected environment and a secret." },
+    ],
+    tips: [
+      "Set <code>permissions:</code> to the least access each workflow needs.",
+      "Keep secrets in <b>Settings → Secrets and variables → Actions</b>. Never echo them or commit <code>.env</code> files.",
+      "Use <code>npm ci</code>, not <code>npm install</code>, in CI. It's faster and fails if the lockfile is out of sync.",
+      "Protect <code>main</code> so a PR can only be merged once its CI checks pass.",
+      "Use a <code>production</code> environment with required reviewers for a manual approval gate before deploying.",
+      "Pin third-party actions to a full commit SHA. Treat them like any other dependency.",
+    ]},
+];
+
+/* ---------- Helpers ---------- */
+const $ = id => document.getElementById(id);
+const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const highlight = s => esc(s).replace(/&lt;[^&]*?&gt;/g, m => `<span class="ph">${m}</span>`);
+const pad = n => String(n).padStart(2, "0");
+const COPY = [];
+const copyBtn = (id, label = "Copy", icon = "copy") =>
+  `<button class="copy" type="button" data-copy="${id}" data-label="${label}" data-icon="${icon}">${svg(icon, 13, 2.2)}<span>${label}</span></button>`;
+
+SECTIONS.forEach(s => (s.blocks || []).forEach(b => { b.text = $(b.src).textContent.trim(); }));
+let activeGuide = "new";
+
+/* ---------- Renderers ---------- */
+function rowHTML([cmd, desc, danger]) {
+  const id = COPY.push(cmd) - 1;
+  return `<div class="row"><div class="row-main">
+      <code data-copy="${id}" title="Tap to copy">${highlight(cmd)}</code>
+      <div class="desc">${danger ? '<span class="badge-red">Destructive ·</span>' : ""}${esc(desc)}</div>
+    </div>${copyBtn(id)}</div>`;
+}
+
+function stepHTML(s, n) {
+  let cmd = "";
+  if (s.c) { const id = COPY.push(s.c) - 1; cmd = `<div class="cmd"><code data-copy="${id}">${highlight(s.c)}</code>${copyBtn(id)}</div>`; }
+  const link = s.link ? `<a class="link-btn" href="${s.link[0]}" target="_blank" rel="noopener">${esc(s.link[1])} ${svg("ext", 14)}</a>` : "";
+  return `<li class="step"><span class="num">${n}</span><div class="step-body">
+    <h4>${esc(s.t)}</h4>${s.d ? `<p>${esc(s.d)}</p>` : ""}${cmd}${link}</div></li>`;
+}
+
+function guideHTML(q) {
+  if (q) {
+    const out = GUIDES.map(g => {
+      const steps = g.steps.filter(s => (s.t + " " + (s.d || "") + " " + (s.c || "")).toLowerCase().includes(q));
+      return steps.length ? `<div class="guide-label">${esc(g.label)}</div><ol class="steps">${steps.map((s, i) => stepHTML(s, g.steps.indexOf(s) + 1)).join("")}</ol>` : "";
+    }).join("");
+    return out ? `<div class="card guide">${out}</div>` : "";
+  }
+  const g = GUIDES.find(x => x.id === activeGuide);
+  const all = g.steps.filter(s => s.c).map(s => s.c).join("\n");
+  const allId = COPY.push(all) - 1;
+  return `<div class="seg" role="tablist">${GUIDES.map(x =>
+      `<button type="button" role="tab" aria-selected="${x.id === g.id}" class="${x.id === g.id ? "on" : ""}" data-guide="${x.id}">${esc(x.label)}</button>`).join("")}</div>
+    <div class="card guide">
+      <div class="guide-top"><p>${esc(g.intro)}</p>${copyBtn(allId, "Copy all", "copyAll")}</div>
+      <ol class="steps">${g.steps.map((s, i) => stepHTML(s, i + 1)).join("")}</ol>
+    </div>
+    ${g.id === "new" ? `<div class="callout">${svg("info", 18)}<div>If <code>git push</code> asks for a password, note that GitHub doesn't accept your account password. Use <b>gh auth login</b>, an <b>SSH key</b>, or a <b>personal access token</b> instead.</div></div>` : ""}`;
+}
+
+function blockHTML(b) {
+  const id = COPY.push(b.text) - 1;
+  return `<div class="card block">
+    <div class="block-head"><span class="file">${svg("file", 16)}${esc(b.file)}</span>${copyBtn(id)}</div>
+    <div class="block-desc">${esc(b.desc)}</div>
+    <pre><code>${esc(b.text)}</code></pre></div>`;
+}
+
+function render() {
+  const q = $("q").value.trim().toLowerCase();
+  const searching = q.length > 0;
+  const hit = t => !searching || t.toLowerCase().includes(q);
+  COPY.length = 0;
+  let html = "", total = 0;
+
+  SECTIONS.forEach((sec, i) => {
+    const items = (sec.items || []).filter(([c, d]) => hit(c + " " + d));
+    const blocks = (sec.blocks || []).filter(b => hit(b.file + " " + b.desc + " " + b.text));
+    const guide = sec.guide ? guideHTML(searching ? q : "") : "";
+    if (searching && !items.length && !blocks.length && !guide) return;
+    total += items.length + blocks.length + (guide ? 1 : 0);
+
+    html += `<section id="${sec.id}">
+      <div class="sec-head"><span class="sec-icon">${svg(sec.icon, 19)}</span>
+        <div><div class="sec-num">Step ${pad(i)}</div><h2>${esc(sec.title)}</h2></div></div>
+      ${sec.note ? `<p class="note">${esc(sec.note)}</p>` : ""}
+      ${!searching && sec.diagram ? $(sec.diagram).innerHTML : ""}
+      ${sec.guide ? `<div id="guideWrap">${guide}</div>` : ""}
+      ${items.length ? `<div class="card list">${items.map(rowHTML).join("")}</div>` : ""}
+      ${blocks.map(blockHTML).join("")}
+      ${!searching && sec.tips ? `<div class="card tips"><h3>${svg("bulb", 17)}Rules of thumb</h3><ul>${sec.tips.map(t => `<li>${t}</li>`).join("")}</ul></div>` : ""}
+    </section>`;
+  });
+
+  $("main").innerHTML = html;
+  $("empty").style.display = searching && !total ? "block" : "none";
+  observeSections();
+}
+
+/* ---------- Copy + toast ---------- */
+let toastT;
+function toast(msg, ok = true) {
+  const t = $("toast");
+  t.innerHTML = `${ok ? svg("check", 16, 2.6) : ""}<span>${msg}</span>`;
+  t.classList.add("show");
+  clearTimeout(toastT);
+  toastT = setTimeout(() => t.classList.remove("show"), 1600);
+}
+
+async function copy(text, btn) {
+  let ok = false;
+  try { await navigator.clipboard.writeText(text); ok = true; }
+  catch {
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.style.cssText = "position:fixed;opacity:0";
+    document.body.appendChild(ta); ta.select();
+    try { ok = document.execCommand("copy"); } catch {}
+    ta.remove();
+  }
+  toast(ok ? "Copied to clipboard" : "Couldn't copy — select and copy manually", ok);
+  if (!btn || !ok) return;
+  btn.classList.add("done");
+  btn.innerHTML = `${svg("check", 13, 2.6)}<span>Copied</span>`;
+  clearTimeout(btn._t);
+  btn._t = setTimeout(() => {
+    btn.classList.remove("done");
+    btn.innerHTML = `${svg(btn.dataset.icon, 13, 2.2)}<span>${btn.dataset.label}</span>`;
+  }, 1400);
+}
+
+$("main").addEventListener("click", e => {
+  const tab = e.target.closest("[data-guide]");
+  if (tab) { activeGuide = tab.dataset.guide; $("guideWrap").innerHTML = guideHTML(""); return; }
+  const el = e.target.closest("[data-copy]");
+  if (!el) return;
+  const btn = el.tagName === "BUTTON" ? el : el.closest(".row, .cmd")?.querySelector(".copy");
+  copy(COPY[el.dataset.copy], btn);
+});
+
+/* ---------- Nav + active section ---------- */
+$("nav").innerHTML = SECTIONS.map(s => `<a href="#${s.id}" data-id="${s.id}">${svg(s.icon, 13, 2.2)}${esc(s.short)}</a>`).join("");
+let io;
+function observeSections() {
+  if (!("IntersectionObserver" in window)) return;
+  io?.disconnect();
+  io = new IntersectionObserver(entries => entries.forEach(en => {
+    if (!en.isIntersecting) return;
+    document.querySelectorAll("nav a").forEach(a => {
+      const on = a.dataset.id === en.target.id;
+      a.classList.toggle("active", on);
+      if (on) a.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
+    });
+  }), { rootMargin: "-130px 0px -60% 0px" });
+  document.querySelectorAll("main section").forEach(s => io.observe(s));
+}
+
+/* ---------- Theme ---------- */
+const store = {
+  get: k => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
+};
+function applyTheme(t) {
+  document.documentElement.dataset.theme = t;
+  $("themeSwitch").checked = t === "dark";
+  document.querySelector('meta[name="theme-color"]').content = t === "dark" ? "#000000" : "#4B5320";
+}
+applyTheme(store.get("theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+$("themeSwitch").addEventListener("change", e => {
+  const t = e.target.checked ? "dark" : "light";
+  applyTheme(t); store.set("theme", t);
+});
+
+/* ---------- Static bits ---------- */
+$("appIcon").innerHTML = svg("git", 18, 2.2);
+$("searchIcon").innerHTML = svg("search", 16, 2.4);
+$("themeIcon").innerHTML = svg("moon", 17);
+$("heroStart").innerHTML = `${svg("rocket", 17)}Push to GitHub`;
+$("heroCicd").innerHTML = `${svg("flow", 17)}CI/CD`;
+const cmdCount = SECTIONS.reduce((n, s) => n + (s.items?.length || 0), 0) + GUIDES.reduce((n, g) => n + g.steps.filter(s => s.c).length, 0);
+$("stats").innerHTML = [`${cmdCount}+ commands`, `${GUIDES.length} guides`, "4 diagrams", "4 workflows"].map(s => `<span class="stat">${s}</span>`).join("");
+
+$("q").addEventListener("input", render);
+document.addEventListener("keydown", e => {
+  if (e.key === "/" && document.activeElement !== $("q")) { e.preventDefault(); $("q").focus(); }
+  if (e.key === "Escape" && document.activeElement === $("q")) { $("q").value = ""; render(); $("q").blur(); }
+});
+
+render();
+</script>
+</body>
+</html>
