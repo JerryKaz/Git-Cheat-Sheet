@@ -11,10 +11,7 @@
 ![Offline](https://img.shields.io/badge/works-offline-4B5320?style=flat-square)
 ![Deploy](https://img.shields.io/github/actions/workflow/status/JerryKaz/Git-Cheat-Sheet/static.yml?branch=main&label=pages&style=flat-square)
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/preview-dark.png">
-  <img src="assets/preview-light.png" alt="Screenshot of the Git cheat sheet: army-green hero banner, section navigation and searchable command list" width="900">
-</picture>
+<img src="https://github.com/user-attachments/assets/e3643ef4-901d-4f9f-8632-5372a655bfe0" alt="Screenshot of the Git cheat sheet: army-green hero banner, section navigation and searchable command list" width="900">
 
 </div>
 
